@@ -1,25 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/daily_state.dart';
+import '../theme/design_system.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Daily Tracker'),
-        actions: [
-          IconButton(
-            tooltip: 'Reset Today',
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () => _showResetDialog(context, ref.read(dailyNotifierProvider.notifier)),
-          )
-        ],
-      ),
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Builder(
         builder: (context) {
           final state = ref.watch(dailyNotifierProvider);
@@ -30,65 +20,622 @@ class DashboardScreen extends ConsumerWidget {
           
           final totalProgress = (state.pushUpsRatio + state.sitUpsRatio + state.squatsRatio + state.waterRatio) / 4;
           
-          return SingleChildScrollView(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+          return CustomScrollView(
+            slivers: [
+              _buildSliverAppBar(context, ref, totalProgress),
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildWelcomeHeader(),
+                      const SizedBox(height: 24),
+                      _buildOverallProgressCard(totalProgress),
+                      const SizedBox(height: 20),
+                      _buildTasksSection(state, notifier),
+                      const SizedBox(height: 20),
+                      _buildMotivationalTip(),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildSliverAppBar(BuildContext context, WidgetRef ref, double totalProgress) {
+    return SliverAppBar(
+      expandedHeight: 120,
+      floating: false,
+      pinned: true,
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      flexibleSpace: FlexibleSpaceBar(
+        background: Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF667EEA),
+                Color(0xFF764BA2),
+              ],
+            ),
+          ),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        'Track Your Day',
+                        style: DesignSystem.textTheme.headlineMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${(totalProgress * 100).round()}% Complete',
+                        style: DesignSystem.textTheme.bodyMedium?.copyWith(
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                  IconButton(
+                    onPressed: () => _showResetDialog(context, ref.read(dailyNotifierProvider.notifier)),
+                    icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withOpacity(0.2),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWelcomeHeader() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color(0xFFFF6B6B),
+            Color(0xFFFF8E53),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF6B6B).withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(15),
+            ),
+            child: const Icon(
+              Icons.fitness_center,
+              color: Colors.white,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _GoalsHeader(colorScheme: colorScheme, textTheme: textTheme),
-                const SizedBox(height: 12),
-                _OverallProgressCard(
-                  progress: totalProgress,
-                  colorScheme: colorScheme,
-                  textTheme: textTheme,
-                ),
-                const SizedBox(height: 12),
-                _ProgressCard(
-                  title: 'Push Ups',
-                  value: state.progress.pushUps,
-                  goal: state.goals.pushUpsGoal,
-                  ratio: state.pushUpsRatio,
-                  onIncrement: () => notifier.addPushUps(10),
-                  onDecrement: () => notifier.addPushUps(-10),
-                  icon: Icons.fitness_center,
-                  color: Colors.orange,
-                ),
-                _ProgressCard(
-                  title: 'Sit Ups',
-                  value: state.progress.sitUps,
-                  goal: state.goals.sitUpsGoal,
-                  ratio: state.sitUpsRatio,
-                  onIncrement: () => notifier.addSitUps(10),
-                  onDecrement: () => notifier.addSitUps(-10),
-                  icon: Icons.accessibility_new,
-                  color: Colors.green,
-                ),
-                _ProgressCard(
-                  title: 'Squats',
-                  value: state.progress.squats,
-                  goal: state.goals.squatsGoal,
-                  ratio: state.squatsRatio,
-                  onIncrement: () => notifier.addSquats(10),
-                  onDecrement: () => notifier.addSquats(-10),
-                  icon: Icons.directions_run,
-                  color: Colors.blue,
-                ),
-                _WaterIntakeCard(
-                  value: state.progress.waterMl,
-                  goal: state.goals.waterMlGoal,
-                  ratio: state.waterRatio,
-                  onAdd: (ml) => notifier.addWater(ml),
-                ),
-                const SizedBox(height: 8),
                 Text(
-                  '💪 Tip: Tap + / - to adjust. Water adds 250ml quickly.',
-                  style: textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                  textAlign: TextAlign.center,
+                  'Hello Amir! 💪',
+                  style: DesignSystem.textTheme.headlineSmall?.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Ready to crush your fitness goals today?',
+                  style: DesignSystem.textTheme.bodyMedium?.copyWith(
+                    color: Colors.white.withOpacity(0.9),
+                  ),
                 ),
               ],
             ),
-          );
-        },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOverallProgressCard(double progress) {
+    final percentage = (progress * 100).round();
+    final isComplete = progress >= 1.0;
+    
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Overall Progress',
+                style: DesignSystem.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: const Color(0xFF2D3748),
+                ),
+              ),
+              if (isComplete)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.green,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_circle, color: Colors.white, size: 16),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Complete!',
+                        style: DesignSystem.textTheme.labelMedium?.copyWith(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: 120,
+                height: 120,
+                child: CircularProgressIndicator(
+                  value: progress.clamp(0.0, 1.0),
+                  strokeWidth: 8,
+                  backgroundColor: const Color(0xFFE2E8F0),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    isComplete ? Colors.green : const Color(0xFF667EEA),
+                  ),
+                ),
+              ),
+              Column(
+                children: [
+                  Text(
+                    '$percentage%',
+                    style: DesignSystem.textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: isComplete ? Colors.green : const Color(0xFF667EEA),
+                    ),
+                  ),
+                  Text(
+                    'Complete',
+                    style: DesignSystem.textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFF718096),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTasksSection(TrackerState state, DailyNotifier notifier) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Today\'s Tasks',
+          style: DesignSystem.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF2D3748),
+          ),
+        ),
+        const SizedBox(height: 16),
+        _buildTaskCard(
+          title: 'Push Ups',
+          value: state.progress.pushUps,
+          goal: state.goals.pushUpsGoal,
+          ratio: state.pushUpsRatio,
+          onIncrement: () => notifier.addPushUps(10),
+          onDecrement: () => notifier.addPushUps(-10),
+          icon: Icons.fitness_center,
+          gradient: const LinearGradient(
+            colors: [Color(0xFFFF6B6B), Color(0xFFFF8E53)],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildTaskCard(
+          title: 'Sit Ups',
+          value: state.progress.sitUps,
+          goal: state.goals.sitUpsGoal,
+          ratio: state.sitUpsRatio,
+          onIncrement: () => notifier.addSitUps(10),
+          onDecrement: () => notifier.addSitUps(-10),
+          icon: Icons.accessibility_new,
+          gradient: const LinearGradient(
+            colors: [Color(0xFF4ECDC4), Color(0xFF44A08D)],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildTaskCard(
+          title: 'Squats',
+          value: state.progress.squats,
+          goal: state.goals.squatsGoal,
+          ratio: state.squatsRatio,
+          onIncrement: () => notifier.addSquats(10),
+          onDecrement: () => notifier.addSquats(-10),
+          icon: Icons.directions_run,
+          gradient: const LinearGradient(
+            colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+          ),
+        ),
+        const SizedBox(height: 12),
+        _buildWaterCard(
+          value: state.progress.waterMl,
+          goal: state.goals.waterMlGoal,
+          ratio: state.waterRatio,
+          onAdd: (ml) => notifier.addWater(ml),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTaskCard({
+    required String title,
+    required int value,
+    required int goal,
+    required double ratio,
+    required VoidCallback onIncrement,
+    required VoidCallback onDecrement,
+    required IconData icon,
+    required LinearGradient gradient,
+  }) {
+    final isComplete = ratio >= 1.0;
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+        border: isComplete 
+          ? Border.all(color: Colors.green.withOpacity(0.3), width: 2)
+          : null,
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  gradient: gradient,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: DesignSystem.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF2D3748),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$value / $goal',
+                      style: DesignSystem.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF718096),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isComplete)
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 18),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: ratio.clamp(0.0, 1.0),
+              minHeight: 8,
+              backgroundColor: const Color(0xFFE2E8F0),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isComplete ? Colors.green : gradient.colors.first,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionButton(
+                  onPressed: onDecrement,
+                  icon: Icons.remove_rounded,
+                  label: '-10',
+                  isPrimary: false,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildActionButton(
+                  onPressed: onIncrement,
+                  icon: Icons.add_rounded,
+                  label: '+10',
+                  isPrimary: true,
+                  gradient: gradient,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWaterCard({
+    required int value,
+    required int goal,
+    required double ratio,
+    required void Function(int ml) onAdd,
+  }) {
+    final isComplete = ratio >= 1.0;
+    
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 5),
+          ),
+        ],
+        border: isComplete 
+          ? Border.all(color: Colors.green.withOpacity(0.3), width: 2)
+          : null,
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 50,
+                height: 50,
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Color(0xFF36D1DC), Color(0xFF5B86E5)],
+                  ),
+                  borderRadius: BorderRadius.all(Radius.circular(12)),
+                ),
+                child: const Icon(Icons.local_drink_rounded, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Water Intake',
+                      style: DesignSystem.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        color: const Color(0xFF2D3748),
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${value}ml / ${goal}ml',
+                      style: DesignSystem.textTheme.bodyMedium?.copyWith(
+                        color: const Color(0xFF718096),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (isComplete)
+                Container(
+                  width: 30,
+                  height: 30,
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check, color: Colors.white, size: 18),
+                ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: LinearProgressIndicator(
+              value: ratio.clamp(0.0, 1.0),
+              minHeight: 8,
+              backgroundColor: const Color(0xFFE2E8F0),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                isComplete ? Colors.green : const Color(0xFF36D1DC),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildActionButton(
+                  onPressed: () => onAdd(-250),
+                  icon: Icons.local_drink_outlined,
+                  label: '-250ml',
+                  isPrimary: false,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildActionButton(
+                  onPressed: () => onAdd(250),
+                  icon: Icons.local_drink_rounded,
+                  label: '+250ml',
+                  isPrimary: true,
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF36D1DC), Color(0xFF5B86E5)],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required VoidCallback onPressed,
+    required IconData icon,
+    required String label,
+    required bool isPrimary,
+    LinearGradient? gradient,
+  }) {
+    if (isPrimary && gradient != null) {
+      return Container(
+        decoration: BoxDecoration(
+          gradient: gradient,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, color: Colors.white, size: 18),
+                  const SizedBox(width: 8),
+                  Text(
+                    label,
+                    style: DesignSystem.textTheme.labelMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    
+    return OutlinedButton.icon(
+      onPressed: onPressed,
+      icon: Icon(icon, size: 18),
+      label: Text(label),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: const Color(0xFF718096),
+        side: const BorderSide(color: Color(0xFFE2E8F0)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.symmetric(vertical: 12),
+      ),
+    );
+  }
+
+  Widget _buildMotivationalTip() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.lightbulb_outline, color: Colors.white, size: 24),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              '💪 Tip: Stay consistent! Small daily progress leads to big results.',
+              style: DesignSystem.textTheme.bodyMedium?.copyWith(
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -97,11 +644,25 @@ class DashboardScreen extends ConsumerWidget {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Reset Today\'s Progress'),
-        content: const Text('Are you sure you want to reset all progress for today? This cannot be undone.'),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        title: Text(
+          'Reset Today\'s Progress',
+          style: DesignSystem.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          'Are you sure you want to reset all progress for today? This cannot be undone.',
+          style: DesignSystem.textTheme.bodyMedium,
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
+            style: TextButton.styleFrom(
+              foregroundColor: const Color(0xFF718096),
+            ),
             child: const Text('Cancel'),
           ),
           ElevatedButton(
@@ -109,6 +670,13 @@ class DashboardScreen extends ConsumerWidget {
               notifier.resetToday();
               Navigator.of(context).pop();
             },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFFF6B6B),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('Reset'),
           ),
         ],
@@ -117,375 +685,3 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
-class _GoalsHeader extends StatelessWidget {
-  const _GoalsHeader({required this.colorScheme, required this.textTheme});
-  final ColorScheme colorScheme;
-  final TextTheme textTheme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [colorScheme.primaryContainer, colorScheme.primaryContainer.withValues(alpha: 0.7)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.primary.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(Icons.flag_rounded, color: colorScheme.primary, size: 24),
-              const SizedBox(width: 8),
-              Text('Today\'s Goals', style: textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              _GoalChip(label: '100 Push Ups', icon: Icons.fitness_center),
-              _GoalChip(label: '100 Sit Ups', icon: Icons.accessibility_new),
-              _GoalChip(label: '100 Squats', icon: Icons.directions_run),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _GoalChip extends StatelessWidget {
-  const _GoalChip({required this.label, required this.icon});
-  final String label;
-  final IconData icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: colorScheme.surface,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: colorScheme.onSurface.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 16, color: colorScheme.primary),
-          const SizedBox(width: 6),
-          Text(label, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
-}
-
-class _OverallProgressCard extends StatelessWidget {
-  const _OverallProgressCard({
-    required this.progress,
-    required this.colorScheme,
-    required this.textTheme,
-  });
-  
-  final double progress;
-  final ColorScheme colorScheme;
-  final TextTheme textTheme;
-
-  @override
-  Widget build(BuildContext context) {
-    final percentage = (progress * 100).round();
-    final isComplete = progress >= 1.0;
-    
-    return Card(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          gradient: isComplete 
-            ? LinearGradient(
-                colors: [Colors.green.shade100, Colors.green.shade50],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
-            : null,
-        ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Overall Progress',
-                  style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                if (isComplete)
-                  Icon(Icons.celebration, color: Colors.green, size: 24)
-                else
-                  Text(
-                    '$percentage%',
-                    style: textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: colorScheme.primary,
-                    ),
-                  ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: progress.clamp(0.0, 1.0),
-                minHeight: 12,
-                backgroundColor: colorScheme.surfaceContainerHighest,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  isComplete ? Colors.green : colorScheme.primary,
-                ),
-              ),
-            ),
-            if (isComplete) ...[
-              const SizedBox(height: 8),
-              Text(
-                '🎉 All goals completed for today!',
-                style: textTheme.bodyMedium?.copyWith(
-                  color: Colors.green.shade700,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ProgressCard extends StatelessWidget {
-  const _ProgressCard({
-    required this.title,
-    required this.value,
-    required this.goal,
-    required this.ratio,
-    required this.onIncrement,
-    required this.onDecrement,
-    required this.icon,
-    required this.color,
-  });
-
-  final String title;
-  final int value;
-  final int goal;
-  final double ratio;
-  final VoidCallback onIncrement;
-  final VoidCallback onDecrement;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final isComplete = ratio >= 1.0;
-    
-    return Card(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: isComplete 
-            ? Border.all(color: Colors.green.shade300, width: 2)
-            : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(icon, color: color, size: 20),
-                    const SizedBox(width: 8),
-                    Text(title, style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Text(
-                      '$value / $goal',
-                      style: textTheme.titleSmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                    ),
-                    if (isComplete) ...[
-                      const SizedBox(width: 8),
-                      Icon(Icons.check_circle, color: Colors.green, size: 20),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: ratio.clamp(0.0, 1.0),
-                minHeight: 10,
-                backgroundColor: colorScheme.surfaceContainerHighest,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  isComplete ? Colors.green : color,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: onDecrement,
-                    icon: const Icon(Icons.remove_rounded),
-                    label: const Text('-10'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: onIncrement,
-                    icon: const Icon(Icons.add_rounded),
-                    label: const Text('+10'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: color,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            )
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _WaterIntakeCard extends StatelessWidget {
-  const _WaterIntakeCard({
-    required this.value,
-    required this.goal,
-    required this.ratio,
-    required this.onAdd,
-  });
-
-  final int value;
-  final int goal;
-  final double ratio;
-  final void Function(int ml) onAdd;
-
-  @override
-  Widget build(BuildContext context) {
-    final colorScheme = Theme.of(context).colorScheme;
-    final textTheme = Theme.of(context).textTheme;
-    final isComplete = ratio >= 1.0;
-    
-    return Card(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          border: isComplete 
-            ? Border.all(color: Colors.green.shade300, width: 2)
-            : null,
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(Icons.local_drink_rounded, color: Colors.blue, size: 20),
-                    const SizedBox(width: 8),
-                    Text('Water Intake', style: textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700)),
-                  ],
-                ),
-                Row(
-                  children: [
-                    Text(
-                      '${value}ml / ${goal}ml',
-                      style: textTheme.titleSmall?.copyWith(color: colorScheme.onSurfaceVariant),
-                    ),
-                    if (isComplete) ...[
-                      const SizedBox(width: 8),
-                      Icon(Icons.check_circle, color: Colors.green, size: 20),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: LinearProgressIndicator(
-                value: ratio.clamp(0.0, 1.0),
-                minHeight: 10,
-                backgroundColor: colorScheme.surfaceContainerHighest,
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  isComplete ? Colors.green : Colors.blue,
-                ),
-              ),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => onAdd(-250),
-                    icon: const Icon(Icons.local_drink_outlined),
-                    label: const Text('-250ml'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: () => onAdd(250),
-                    icon: const Icon(Icons.local_drink_rounded),
-                    label: const Text('+250ml'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            )
-          ],
-        ),
-      ),
-    );
-  }
-}
