@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/daily_state.dart';
+import '../state/run_history_state.dart';
 import '../theme/design_system.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -14,11 +15,13 @@ class DashboardScreen extends ConsumerWidget {
         builder: (context) {
           final state = ref.watch(dailyNotifierProvider);
           final notifier = ref.read(dailyNotifierProvider.notifier);
+          final runHistory = ref.watch(runHistoryProvider);
           if (!state.initialized) {
             return const Center(child: CircularProgressIndicator());
           }
           
           final totalProgress = (state.pushUpsRatio + state.sitUpsRatio + state.squatsRatio + state.waterRatio) / 4;
+          final todaysRun = _getTodaysRun(runHistory);
           
           return CustomScrollView(
             slivers: [
@@ -32,6 +35,8 @@ class DashboardScreen extends ConsumerWidget {
                       _buildWelcomeHeader(),
                       const SizedBox(height: 24),
                       _buildOverallProgressCard(totalProgress),
+                      const SizedBox(height: 20),
+                      _buildTodaysRunSection(context, todaysRun),
                       const SizedBox(height: 20),
                       _buildTasksSection(state, notifier),
                       const SizedBox(height: 20),
@@ -153,7 +158,7 @@ class DashboardScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Hello Amir! 💪',
+                  'Hello Magesh! 💪',
                   style: DesignSystem.textTheme.headlineSmall?.copyWith(
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
@@ -680,6 +685,244 @@ class DashboardScreen extends ConsumerWidget {
             child: const Text('Reset'),
           ),
         ],
+      ),
+    );
+  }
+
+  RunEntry? _getTodaysRun(List<RunEntry> runHistory) {
+    final today = DateTime.now();
+    final todayStart = DateTime(today.year, today.month, today.day);
+    final todayEnd = todayStart.add(const Duration(days: 1));
+    
+    for (final run in runHistory) {
+      if (run.date.isAfter(todayStart) && run.date.isBefore(todayEnd)) {
+        return run;
+      }
+    }
+    return null;
+  }
+
+  Widget _buildTodaysRunSection(BuildContext context, RunEntry? todaysRun) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Today\'s Run',
+          style: DesignSystem.textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            color: const Color(0xFF2D3748),
+          ),
+        ),
+        const SizedBox(height: 16),
+        Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+            border: todaysRun != null 
+              ? Border.all(color: Colors.green.withOpacity(0.3), width: 2)
+              : null,
+          ),
+          child: todaysRun != null 
+            ? _buildCompletedRunCard(todaysRun)
+            : _buildNoRunCard(context),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompletedRunCard(RunEntry run) {
+    final duration = run.duration;
+    final distance = run.distanceMeters / 1000; // Convert to km
+    final pace = duration.inMinutes / distance; // Minutes per km
+    
+    return Column(
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF10B981), Color(0xFF059669)],
+                ),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+              child: const Icon(Icons.directions_run, color: Colors.white, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Run Completed! 🎉',
+                    style: DesignSystem.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF2D3748),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Great job on your run today!',
+                    style: DesignSystem.textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF718096),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              width: 30,
+              height: 30,
+              decoration: const BoxDecoration(
+                color: Colors.green,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check, color: Colors.white, size: 18),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _buildRunStat(
+                'Distance',
+                '${distance.toStringAsFixed(2)} km',
+                Icons.straighten,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildRunStat(
+                'Duration',
+                '${duration.inMinutes}:${(duration.inSeconds % 60).toString().padLeft(2, '0')}',
+                Icons.timer,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: _buildRunStat(
+                'Pace',
+                '${pace.toStringAsFixed(1)} min/km',
+                Icons.speed,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNoRunCard(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 50,
+              height: 50,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Color(0xFF6B7280), Color(0xFF4B5563)],
+                ),
+                borderRadius: BorderRadius.all(Radius.circular(12)),
+              ),
+              child: const Icon(Icons.directions_run, color: Colors.white, size: 24),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'No Run Today',
+                    style: DesignSystem.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF2D3748),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Ready to go for a run?',
+                    style: DesignSystem.textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF718096),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () {
+              // Navigate to run screen by changing the bottom navigation index
+              _navigateToRunScreen(context);
+            },
+            icon: const Icon(Icons.play_arrow_rounded),
+            label: const Text('Start Run'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF10B981),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRunStat(String label, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: const Color(0xFF10B981), size: 20),
+          const SizedBox(height: 4),
+          Text(
+            value,
+            style: DesignSystem.textTheme.titleSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF2D3748),
+            ),
+          ),
+          Text(
+            label,
+            style: DesignSystem.textTheme.bodySmall?.copyWith(
+              color: const Color(0xFF718096),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _navigateToRunScreen(BuildContext context) {
+    // For now, we'll show a snackbar indicating the user should use the bottom navigation
+    // In a real app, you might use a navigation provider or callback
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Use the bottom navigation to go to the Run screen'),
+        duration: Duration(seconds: 2),
       ),
     );
   }
