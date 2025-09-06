@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../state/daily_state.dart';
 import '../state/run_history_state.dart';
+import '../models/tracking_models.dart';
+import '../widgets/tracking_category_card.dart';
+import '../screens/enhanced_expense_tracker_screen.dart';
+import '../screens/dynamic_activities_screen.dart';
 import '../theme/design_system.dart';
 
 class DashboardScreen extends ConsumerWidget {
@@ -37,6 +41,8 @@ class DashboardScreen extends ConsumerWidget {
                       _buildOverallProgressCard(totalProgress),
                       const SizedBox(height: 20),
                       _buildTodaysRunSection(context, todaysRun),
+                      const SizedBox(height: 20),
+                      _buildComprehensiveTrackingSection(context),
                       const SizedBox(height: 20),
                       _buildTasksSection(state, notifier),
                       const SizedBox(height: 20),
@@ -923,6 +929,175 @@ class DashboardScreen extends ConsumerWidget {
       const SnackBar(
         content: Text('Use the bottom navigation to go to the Run screen'),
         duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Widget _buildComprehensiveTrackingSection(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'Life Tracking',
+              style: DesignSystem.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFF2D3748),
+              ),
+            ),
+            TextButton.icon(
+              onPressed: () => _showAllCategories(context),
+              icon: const Icon(Icons.grid_view, size: 18),
+              label: const Text('View All'),
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF667EEA),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        // Show first 3 categories as preview
+        ...TrackingCategories.all.take(3).map((category) {
+          return TrackingCategoryCard(
+            category: category,
+            completedCount: _getCompletedCountForCategory(category.id),
+            totalCount: category.subcategories.length,
+            progress: _getProgressForCategory(category.id),
+            onTap: () => _navigateToCategory(context, category),
+          );
+        }).toList(),
+        const SizedBox(height: 12),
+        // Quick access to expense tracker
+        Container(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (context) => const EnhancedExpenseTrackerScreen()),
+            ),
+            icon: const Icon(Icons.account_balance_wallet),
+            label: const Text('💵 Expense Tracker'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  int _getCompletedCountForCategory(String categoryId) {
+    // This would be implemented based on actual tracking data
+    // For now, return a placeholder value
+    switch (categoryId) {
+      case 'personal_growth':
+        return 2;
+      case 'health_fitness':
+        return 3;
+      case 'mind_mental_health':
+        return 1;
+      default:
+        return 0;
+    }
+  }
+
+  double _getProgressForCategory(String categoryId) {
+    // This would be implemented based on actual tracking data
+    // For now, return a placeholder value
+    switch (categoryId) {
+      case 'personal_growth':
+        return 0.5; // 2/4 completed
+      case 'health_fitness':
+        return 0.6; // 3/5 completed
+      case 'mind_mental_health':
+        return 0.33; // 1/3 completed
+      default:
+        return 0.0;
+    }
+  }
+
+  void _navigateToCategory(BuildContext context, TrackingCategory category) {
+    // Navigate to dynamic activities screen based on category
+    String categoryId;
+    switch (category.id) {
+      case 'personal_growth':
+        categoryId = 'personal_growth';
+        break;
+      case 'health_fitness':
+        categoryId = 'fitness';
+        break;
+      case 'mind_mental_health':
+        categoryId = 'mind_wellness';
+        break;
+      default:
+        categoryId = 'personal_growth';
+    }
+    
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DynamicActivitiesScreen(category: categoryId),
+      ),
+    );
+  }
+
+  void _showAllCategories(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.8,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        child: Column(
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Text(
+                'All Categories',
+                style: DesignSystem.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            Expanded(
+              child: ListView.builder(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                itemCount: TrackingCategories.all.length,
+                itemBuilder: (context, index) {
+                  final category = TrackingCategories.all[index];
+                  return TrackingCategoryCard(
+                    category: category,
+                    completedCount: _getCompletedCountForCategory(category.id),
+                    totalCount: category.subcategories.length,
+                    progress: _getProgressForCategory(category.id),
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      _navigateToCategory(context, category);
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -56,28 +56,44 @@ class MyApp extends StatelessWidget {
     final darkTheme = ThemeData(
       useMaterial3: true,
       colorScheme: darkScheme,
-      scaffoldBackgroundColor: darkScheme.surface,
+      scaffoldBackgroundColor: const Color(0xFF0F0F0F),
       textTheme: DesignSystem.textTheme.apply(
-        bodyColor: darkScheme.onSurface,
-        displayColor: darkScheme.onSurface,
+        bodyColor: Colors.white,
+        displayColor: Colors.white,
       ),
-      appBarTheme: AppBarTheme(
-        backgroundColor: darkScheme.surface,
-        foregroundColor: darkScheme.onSurface,
+      appBarTheme: const AppBarTheme(
+        backgroundColor: Color(0xFF1A1A1A),
+        foregroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
-        titleTextStyle: GoogleFonts.inter(
+        titleTextStyle: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w700,
-          color: darkScheme.onSurface,
+          color: Colors.white,
         ),
       ),
       cardTheme: const CardThemeData(
         margin: EdgeInsets.symmetric(vertical: 8),
+        color: Color(0xFF1A1A1A),
       ),
-      progressIndicatorTheme: ProgressIndicatorThemeData(
-        color: darkScheme.primary,
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: Color(0xFF667EEA),
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: Color(0xFF1A1A1A),
+        selectedItemColor: Color(0xFF667EEA),
+        unselectedItemColor: Colors.grey,
+      ),
+      navigationBarTheme: const NavigationBarThemeData(
+        backgroundColor: Color(0xFF1A1A1A),
+        indicatorColor: Color(0xFF667EEA),
+        labelTextStyle: MaterialStatePropertyAll(
+          TextStyle(color: Colors.white),
+        ),
+        iconTheme: MaterialStatePropertyAll(
+          IconThemeData(color: Colors.white),
+        ),
       ),
     );
 
@@ -85,7 +101,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Daily Tracker',
         debugShowCheckedModeBanner: false,
-        themeMode: ThemeMode.system,
+        themeMode: ThemeMode.dark,
         theme: lightTheme,
         darkTheme: darkTheme,
         home: const AppShell(),

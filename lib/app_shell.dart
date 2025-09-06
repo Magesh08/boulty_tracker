@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'screens/dashboard_screen.dart';
 import 'screens/run_screen.dart';
-import 'screens/schedule_screen.dart';
-import 'screens/progress_screen.dart';
-import 'screens/library_screen.dart';
+import 'screens/comprehensive_fitness_screen.dart';
+import 'screens/enhanced_expense_tracker_screen.dart';
+import 'screens/monthly_analytics_screen.dart';
 
 class AppShell extends ConsumerStatefulWidget {
   const AppShell({super.key});
@@ -22,9 +22,9 @@ class _AppShellState extends ConsumerState<AppShell> {
     final pages = [
       const DashboardScreen(),
       const RunScreen(),
-      const ScheduleScreen(),
-      const ProgressScreen(),
-      const LibraryScreen(),
+      const EnhancedExpenseTrackerScreen(),
+      const MonthlyAnalyticsScreen(),
+      const ComprehensiveFitnessScreen(),
     ];
 
     return Scaffold(
@@ -35,9 +35,9 @@ class _AppShellState extends ConsumerState<AppShell> {
         destinations: const [
           NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Home'),
           NavigationDestination(icon: Icon(Icons.directions_run_outlined), selectedIcon: Icon(Icons.directions_run), label: 'Run'),
-          NavigationDestination(icon: Icon(Icons.calendar_month_outlined), selectedIcon: Icon(Icons.calendar_month), label: 'Schedule'),
-          NavigationDestination(icon: Icon(Icons.show_chart_outlined), selectedIcon: Icon(Icons.show_chart), label: 'Progress'),
-          NavigationDestination(icon: Icon(Icons.grid_view_outlined), selectedIcon: Icon(Icons.grid_view), label: 'Library'),
+          NavigationDestination(icon: Icon(Icons.account_balance_wallet_outlined), selectedIcon: Icon(Icons.account_balance_wallet), label: 'Expenses'),
+          NavigationDestination(icon: Icon(Icons.analytics_outlined), selectedIcon: Icon(Icons.analytics), label: 'Analytics'),
+          NavigationDestination(icon: Icon(Icons.fitness_center_outlined), selectedIcon: Icon(Icons.fitness_center), label: 'Fitness'),
         ],
       ),
     );
