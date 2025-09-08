@@ -18,6 +18,10 @@ class _ExpenseTrackerScreenState extends ConsumerState<ExpenseTrackerScreen> {
   String _selectedType = 'Expense';
   DateTime _selectedDate = DateTime.now();
 
+  // Calendar filter state
+  String _filterMode = 'All'; // All | Date | Month | Year
+  DateTime? _filterAnchorDate; // stores the picked date/month/year anchor
+
   final List<String> _expenseCategories = [
     'Food',
     'Transport',
@@ -44,17 +48,17 @@ class _ExpenseTrackerScreenState extends ConsumerState<ExpenseTrackerScreen> {
     final expenses = ref.watch(expenseProvider);
     final expenseNotifier = ref.read(expenseProvider.notifier);
 
-    // Calculate monthly totals
-    final now = DateTime.now();
-    final monthlyExpenses = expenses.where((e) {
-      return e.date.year == now.year && e.date.month == now.month;
-    }).toList();
+    // Compute filtered list based on calendar filter
+    final List<ExpenseEntry> filteredExpenses = _applyCalendarFilter(expenses);
 
-    final totalExpenses = monthlyExpenses
+    // Summary period label and totals based on filter
+    final String periodLabel = _buildPeriodLabel();
+
+    final totalExpenses = filteredExpenses
         .where((e) => e.type == 'Expense')
         .fold(0.0, (sum, e) => sum + e.amount);
 
-    final totalIncome = monthlyExpenses
+    final totalIncome = filteredExpenses
         .where((e) => e.type == 'Income')
         .fold(0.0, (sum, e) => sum + e.amount);
 
@@ -68,14 +72,45 @@ class _ExpenseTrackerScreenState extends ConsumerState<ExpenseTrackerScreen> {
         elevation: 0,
         actions: [
           IconButton(
+            tooltip: 'Add',
             onPressed: () => _showAddExpenseDialog(expenseNotifier),
             icon: const Icon(Icons.add),
+          ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.calendar_month),
+            tooltip: 'Filter by date/month/year',
+            onSelected: (value) async {
+              switch (value) {
+                case 'date':
+                  await _pickExactDate();
+                  break;
+                case 'month':
+                  await _pickMonth();
+                  break;
+                case 'year':
+                  await _pickYear();
+                  break;
+                case 'clear':
+                  setState(() {
+                    _filterMode = 'All';
+                    _filterAnchorDate = null;
+                  });
+                  break;
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(value: 'date', child: Text('Filter by date')),
+              const PopupMenuItem(value: 'month', child: Text('Filter by month')),
+              const PopupMenuItem(value: 'year', child: Text('Filter by year')),
+              const PopupMenuDivider(),
+              const PopupMenuItem(value: 'clear', child: Text('Clear filter')),
+            ],
           ),
         ],
       ),
       body: Column(
         children: [
-          // Monthly Summary Card
+          // Monthly/Period Summary Card
           Container(
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(20),
@@ -97,7 +132,7 @@ class _ExpenseTrackerScreenState extends ConsumerState<ExpenseTrackerScreen> {
             child: Column(
               children: [
                 Text(
-                  '${DateFormat('MMMM yyyy').format(now)}',
+                  periodLabel,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 18,
@@ -118,13 +153,13 @@ class _ExpenseTrackerScreenState extends ConsumerState<ExpenseTrackerScreen> {
           ),
           // Expense List
           Expanded(
-            child: expenses.isEmpty
+            child: filteredExpenses.isEmpty
                 ? _buildEmptyState()
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: expenses.length,
+                    itemCount: filteredExpenses.length,
                     itemBuilder: (context, index) {
-                      final expense = expenses[index];
+                      final expense = filteredExpenses[index];
                       return _buildExpenseCard(expense, expenseNotifier);
                     },
                   ),
@@ -137,6 +172,95 @@ class _ExpenseTrackerScreenState extends ConsumerState<ExpenseTrackerScreen> {
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
+  }
+
+  // Helpers for calendar filter
+  List<ExpenseEntry> _applyCalendarFilter(List<ExpenseEntry> expenses) {
+    if (_filterMode == 'All' || _filterAnchorDate == null) {
+      return expenses;
+    }
+    final DateTime anchor = _filterAnchorDate!;
+    switch (_filterMode) {
+      case 'Date':
+        return expenses.where((e) => _isSameDate(e.date, anchor)).toList();
+      case 'Month':
+        return expenses.where((e) => e.date.year == anchor.year && e.date.month == anchor.month).toList();
+      case 'Year':
+        return expenses.where((e) => e.date.year == anchor.year).toList();
+      default:
+        return expenses;
+    }
+  }
+
+  String _buildPeriodLabel() {
+    if (_filterMode == 'All' || _filterAnchorDate == null) {
+      final now = DateTime.now();
+      return DateFormat('MMMM yyyy').format(now);
+    }
+    switch (_filterMode) {
+      case 'Date':
+        return DateFormat('MMM dd, yyyy').format(_filterAnchorDate!);
+      case 'Month':
+        return DateFormat('MMMM yyyy').format(_filterAnchorDate!);
+      case 'Year':
+        return DateFormat('yyyy').format(_filterAnchorDate!);
+      default:
+        return DateFormat('MMMM yyyy').format(DateTime.now());
+    }
+  }
+
+  bool _isSameDate(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  Future<void> _pickExactDate() async {
+    final initial = _filterAnchorDate ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+    );
+    if (picked != null) {
+      setState(() {
+        _filterMode = 'Date';
+        _filterAnchorDate = picked;
+      });
+    }
+  }
+
+  Future<void> _pickMonth() async {
+    final initial = _filterAnchorDate ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      initialDatePickerMode: DatePickerMode.year,
+    );
+    if (picked != null) {
+      setState(() {
+        _filterMode = 'Month';
+        _filterAnchorDate = DateTime(picked.year, picked.month, 1);
+      });
+    }
+  }
+
+  Future<void> _pickYear() async {
+    final initial = _filterAnchorDate ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      initialDatePickerMode: DatePickerMode.year,
+    );
+    if (picked != null) {
+      setState(() {
+        _filterMode = 'Year';
+        _filterAnchorDate = DateTime(picked.year, 1, 1);
+      });
+    }
   }
 
   Widget _buildSummaryItem(String label, double amount, Color color) {

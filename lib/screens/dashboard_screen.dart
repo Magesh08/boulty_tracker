@@ -40,7 +40,7 @@ class DashboardScreen extends ConsumerWidget {
                       const SizedBox(height: 24),
                       _buildOverallProgressCard(totalProgress),
                       const SizedBox(height: 20),
-                      _buildTodaysRunSection(context, todaysRun),
+                      _buildTodaysRunSection(context, todaysRun, ref),
                       const SizedBox(height: 20),
                       _buildComprehensiveTrackingSection(context),
                       const SizedBox(height: 20),
@@ -708,7 +708,7 @@ class DashboardScreen extends ConsumerWidget {
     return null;
   }
 
-  Widget _buildTodaysRunSection(BuildContext context, RunEntry? todaysRun) {
+  Widget _buildTodaysRunSection(BuildContext context, RunEntry? todaysRun, WidgetRef ref) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -740,6 +740,29 @@ class DashboardScreen extends ConsumerWidget {
             ? _buildCompletedRunCard(todaysRun)
             : _buildNoRunCard(context),
         ),
+        if (todaysRun == null) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () async {
+                final now = DateTime.now();
+                // 10 km quick log with a default 60 minutes duration
+                final entry = RunEntry(
+                  date: now,
+                  duration: const Duration(minutes: 60),
+                  distanceMeters: 10000,
+                );
+                await ref.read(runHistoryProvider.notifier).add(entry);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Logged 10 km run')),
+                );
+              },
+              icon: const Icon(Icons.directions_run),
+              label: const Text('Log 10 km'),
+            ),
+          ),
+        ],
       ],
     );
   }

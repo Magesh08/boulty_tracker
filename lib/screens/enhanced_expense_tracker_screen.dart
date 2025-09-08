@@ -20,6 +20,10 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
   TimeOfDay _selectedTime = TimeOfDay.now();
   String _selectedFilter = 'All';
 
+  // Calendar override filter (takes precedence over _selectedFilter chips when set)
+  String? _calendarFilterMode; // 'Date' | 'Month' | 'Year' | 'Week'
+  DateTime? _calendarAnchorDate;
+
   final List<String> _expenseCategories = [
     'Food',
     'Transport',
@@ -61,8 +65,8 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
     final expenses = ref.watch(expenseProvider);
     final expenseNotifier = ref.read(expenseProvider.notifier);
 
-    // Filter expenses based on selected filter
-    final filteredExpenses = _filterExpenses(expenses);
+    // Apply calendar override filter if set; otherwise, use chip-based filter
+    final filteredExpenses = _applyEffectiveFilter(expenses);
 
     // Calculate totals for filtered data
     final totalExpenses = filteredExpenses
@@ -87,6 +91,40 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
             onPressed: () => _showAddExpenseDialog(expenseNotifier),
             icon: const Icon(Icons.add, color: Colors.white),
           ),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.calendar_month, color: Colors.white),
+            tooltip: 'Filter by date/month/year/week',
+            onSelected: (value) async {
+              switch (value) {
+                case 'date':
+                  await _pickExactDate();
+                  break;
+                case 'month':
+                  await _pickMonth();
+                  break;
+                case 'year':
+                  await _pickYear();
+                  break;
+                case 'week':
+                  await _pickWeek();
+                  break;
+                case 'clear':
+                  setState(() {
+                    _calendarFilterMode = null;
+                    _calendarAnchorDate = null;
+                  });
+                  break;
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'date', child: Text('Filter by date')),
+              PopupMenuItem(value: 'month', child: Text('Filter by month')),
+              PopupMenuItem(value: 'year', child: Text('Filter by year')),
+              PopupMenuItem(value: 'week', child: Text('Filter by week')),
+              PopupMenuDivider(),
+              PopupMenuItem(value: 'clear', child: Text('Clear filter')),
+            ],
+          ),
         ],
       ),
       body: Column(
@@ -95,7 +133,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
           _buildMotivationalQuote(),
           // Filter Section
           _buildFilterSection(),
-          // Monthly Summary Card
+          // Summary Card
           _buildSummaryCard(totalIncome, totalExpenses, netAmount),
           // Expense List
           Expanded(
@@ -167,7 +205,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
         scrollDirection: Axis.horizontal,
         child: Row(
           children: _filters.map((filter) {
-            final isSelected = _selectedFilter == filter;
+            final isSelected = _selectedFilter == filter && _calendarFilterMode == null;
             return Container(
               margin: const EdgeInsets.only(right: 8),
               child: FilterChip(
@@ -175,6 +213,8 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
                 selected: isSelected,
                 onSelected: (selected) {
                   setState(() {
+                    _calendarFilterMode = null; // clear calendar override when using chips
+                    _calendarAnchorDate = null;
                     _selectedFilter = filter;
                   });
                 },
@@ -212,7 +252,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
       child: Column(
         children: [
           Text(
-            _getFilterTitle(),
+            _getEffectiveFilterTitle(),
             style: const TextStyle(
               color: Colors.white,
               fontSize: 18,
@@ -286,7 +326,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
           ),
           const SizedBox(height: 8),
           Text(
-            'Start tracking your ${_selectedFilter.toLowerCase()} expenses',
+            'Start tracking your ${_getEffectiveFilterTitle().toLowerCase()}',
             textAlign: TextAlign.center,
             style: const TextStyle(
               fontSize: 16,
@@ -739,6 +779,31 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
     );
   }
 
+  // Filtering
+  List<ExpenseEntry> _applyEffectiveFilter(List<ExpenseEntry> expenses) {
+    if (_calendarFilterMode != null && _calendarAnchorDate != null) {
+      return _applyCalendarFilter(expenses, _calendarFilterMode!, _calendarAnchorDate!);
+    }
+    return _filterExpenses(expenses);
+  }
+
+  List<ExpenseEntry> _applyCalendarFilter(List<ExpenseEntry> expenses, String mode, DateTime anchor) {
+    switch (mode) {
+      case 'Date':
+        return expenses.where((e) => _isSameDate(e.date, anchor)).toList();
+      case 'Week':
+        final start = _startOfWeek(anchor);
+        final end = start.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59, milliseconds: 999));
+        return expenses.where((e) => !e.date.isBefore(start) && !e.date.isAfter(end)).toList();
+      case 'Month':
+        return expenses.where((e) => e.date.year == anchor.year && e.date.month == anchor.month).toList();
+      case 'Year':
+        return expenses.where((e) => e.date.year == anchor.year).toList();
+      default:
+        return expenses;
+    }
+  }
+
   List<ExpenseEntry> _filterExpenses(List<ExpenseEntry> expenses) {
     final now = DateTime.now();
     
@@ -750,10 +815,10 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
                  e.date.day == now.day;
         }).toList();
       case 'This Week':
-        final startOfWeek = now.subtract(Duration(days: now.weekday - 1));
-        final endOfWeek = startOfWeek.add(const Duration(days: 7));
+        final startOfWeek = _startOfWeek(now);
+        final endOfWeek = startOfWeek.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59, milliseconds: 999));
         return expenses.where((e) {
-          return e.date.isAfter(startOfWeek) && e.date.isBefore(endOfWeek);
+          return !e.date.isBefore(startOfWeek) && !e.date.isAfter(endOfWeek);
         }).toList();
       case 'This Month':
         return expenses.where((e) {
@@ -768,7 +833,21 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
     }
   }
 
-  String _getFilterTitle() {
+  String _getEffectiveFilterTitle() {
+    if (_calendarFilterMode != null && _calendarAnchorDate != null) {
+      switch (_calendarFilterMode) {
+        case 'Date':
+          return DateFormat('MMM dd, yyyy').format(_calendarAnchorDate!);
+        case 'Week':
+          final start = _startOfWeek(_calendarAnchorDate!);
+          final end = start.add(const Duration(days: 6));
+          return 'Week: ${DateFormat('MMM dd').format(start)} - ${DateFormat('MMM dd, yyyy').format(end)}';
+        case 'Month':
+          return DateFormat('MMMM yyyy').format(_calendarAnchorDate!);
+        case 'Year':
+          return DateFormat('yyyy').format(_calendarAnchorDate!);
+      }
+    }
     switch (_selectedFilter) {
       case 'Today':
         return 'Today\'s Summary';
@@ -781,5 +860,135 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
       default:
         return 'All Time Summary';
     }
+  }
+
+  // Calendar pickers
+  Future<void> _pickExactDate() async {
+    final initial = _calendarAnchorDate ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF667EEA),
+              onPrimary: Colors.white,
+              surface: Color(0xFF2A2A2A),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _calendarFilterMode = 'Date';
+        _calendarAnchorDate = picked;
+      });
+    }
+  }
+
+  Future<void> _pickMonth() async {
+    final initial = _calendarAnchorDate ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      initialDatePickerMode: DatePickerMode.year,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF667EEA),
+              onPrimary: Colors.white,
+              surface: Color(0xFF2A2A2A),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _calendarFilterMode = 'Month';
+        _calendarAnchorDate = DateTime(picked.year, picked.month, 1);
+      });
+    }
+  }
+
+  Future<void> _pickYear() async {
+    final initial = _calendarAnchorDate ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      initialDatePickerMode: DatePickerMode.year,
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF667EEA),
+              onPrimary: Colors.white,
+              surface: Color(0xFF2A2A2A),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _calendarFilterMode = 'Year';
+        _calendarAnchorDate = DateTime(picked.year, 1, 1);
+      });
+    }
+  }
+
+  Future<void> _pickWeek() async {
+    final initial = _calendarAnchorDate ?? DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 3650)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: Color(0xFF667EEA),
+              onPrimary: Colors.white,
+              surface: Color(0xFF2A2A2A),
+              onSurface: Colors.white,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _calendarFilterMode = 'Week';
+        _calendarAnchorDate = picked;
+      });
+    }
+  }
+
+  // Utils
+  bool _isSameDate(DateTime a, DateTime b) {
+    return a.year == b.year && a.month == b.month && a.day == b.day;
+  }
+
+  DateTime _startOfWeek(DateTime date) {
+    // Assuming week starts on Monday (1)
+    final int weekday = date.weekday; // 1..7 (Mon..Sun)
+    return DateTime(date.year, date.month, date.day).subtract(Duration(days: weekday - 1));
   }
 }

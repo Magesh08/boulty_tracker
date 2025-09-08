@@ -32,6 +32,11 @@ class _DynamicActivitiesScreenState extends ConsumerState<DynamicActivitiesScree
     '🧘‍♀️', '🚴‍♂️', '🏊‍♂️', '⚽', '🏀', '🎯', '🎪', '🎭', '📝', '🔬',
   ];
 
+  // Extended emoji list for picker
+  final List<String> _emojiLibrary = const [
+    '💻','🖥️','⌨️','🖱️','🎤','🎧','🎹','🥁','🎷','🎺','🎸','🎻','🎬','🎨','🖌️','🧵','🧶','📚','📖','📰','🗣️','📝','✍️','🧪','🔬','🧘','🧘‍♀️','🏃‍♂️','🏃‍♀️','🚴‍♂️','🚴‍♀️','🏋️‍♂️','🏋️‍♀️','🏊‍♂️','🏊‍♀️','🤸‍♂️','🤸‍♀️','⛹️‍♂️','⛹️‍♀️','⚽','🏀','🎾','🏐','🏓','🥊','🥋','🎯','🎮','♟️','🧩','🎲','🎭','🎪','🎼','🎵','🎶','🛠️','🧰','🧱','🪚','🪛','🧗','🧗‍♀️','⛰️','🚶‍♂️','🚶‍♀️','🌳','🌲','🌿','🌼','🌞','🌙'
+  ];
+
   @override
   void dispose() {
     _nameController.dispose();
@@ -296,9 +301,43 @@ class _DynamicActivitiesScreenState extends ConsumerState<DynamicActivitiesScree
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Icon Selection
+                // Icon Selection Controls
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _iconController,
+                        style: const TextStyle(color: Colors.white, fontSize: 18),
+                        decoration: const InputDecoration(
+                          labelText: 'Emoji or Icon (e.g., 🧘‍♀️)',
+                          labelStyle: TextStyle(color: Colors.grey),
+                          border: OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton.icon(
+                      onPressed: () async {
+                        final picked = await _showIconPicker();
+                        if (picked != null) {
+                          setDialogState(() {
+                            _iconController.text = picked;
+                          });
+                        }
+                      },
+                      icon: const Icon(Icons.emoji_emotions_outlined),
+                      label: const Text('Pick'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF667EEA),
+                        foregroundColor: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                // Quick emoji grid (legacy)
                 const Text(
-                  'Select Icon:',
+                  'Popular Icons',
                   style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600),
                 ),
                 const SizedBox(height: 8),
@@ -389,12 +428,15 @@ class _DynamicActivitiesScreenState extends ConsumerState<DynamicActivitiesScree
             ),
             ElevatedButton(
               onPressed: () {
-                if (_nameController.text.isNotEmpty && _iconController.text.isNotEmpty) {
+                if (_nameController.text.isNotEmpty) {
+                  // Default icon if none chosen
+                  final iconText = _iconController.text.isNotEmpty ? _iconController.text : (_icons.isNotEmpty ? _icons.first : '⭐');
+
                   final newActivity = DynamicActivity(
                     id: isEditing ? activity.id : DateTime.now().millisecondsSinceEpoch.toString(),
                     name: _nameController.text,
                     category: widget.category,
-                    icon: _iconController.text,
+                    icon: iconText,
                     color: _selectedColor,
                     description: _descriptionController.text,
                     createdAt: isEditing ? activity.createdAt : DateTime.now(),
@@ -410,7 +452,7 @@ class _DynamicActivitiesScreenState extends ConsumerState<DynamicActivitiesScree
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('Please fill in all required fields'),
+                      content: Text('Please enter a name for the activity'),
                       backgroundColor: Colors.red,
                     ),
                   );
@@ -423,6 +465,112 @@ class _DynamicActivitiesScreenState extends ConsumerState<DynamicActivitiesScree
               child: Text(isEditing ? 'Update' : 'Add'),
             ),
           ],
+        );
+      },
+    );
+  }
+
+  Future<String?> _showIconPicker() async {
+    String query = '';
+    String? selected;
+    return showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1A1A1A),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final filtered = _emojiLibrary
+                .where((e) => query.isEmpty || e.contains(query))
+                .toList();
+            return SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(Icons.emoji_emotions, color: Colors.white70),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Choose Emoji',
+                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        IconButton(
+                          onPressed: () => Navigator.of(context).pop(selected),
+                          icon: const Icon(Icons.check, color: Colors.white),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      onChanged: (val) => setState(() { query = val.trim(); }),
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        hintText: 'Search emoji (type to filter)',
+                        hintStyle: const TextStyle(color: Colors.white54),
+                        prefixIcon: const Icon(Icons.search, color: Colors.white54),
+                        filled: true,
+                        fillColor: const Color(0xFF2A2A2A),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: GridView.builder(
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 6,
+                          crossAxisSpacing: 8,
+                          mainAxisSpacing: 8,
+                        ),
+                        itemCount: filtered.length,
+                        itemBuilder: (context, index) {
+                          final e = filtered[index];
+                          final isSel = selected == e;
+                          return GestureDetector(
+                            onTap: () => setState(() { selected = e; }),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: isSel ? const Color(0xFF667EEA).withOpacity(0.3) : const Color(0xFF2A2A2A),
+                                borderRadius: BorderRadius.circular(8),
+                                border: Border.all(color: isSel ? const Color(0xFF667EEA) : const Color(0xFF3A3A3A)),
+                              ),
+                              child: Center(
+                                child: Text(e, style: const TextStyle(fontSize: 22)),
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: selected == null ? null : () => Navigator.of(context).pop(selected),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF667EEA),
+                          foregroundColor: Colors.white,
+                          disabledBackgroundColor: const Color(0xFF3A3A3A),
+                          disabledForegroundColor: Colors.white54,
+                        ),
+                        child: const Text('Use Selected Emoji'),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );
