@@ -14,30 +14,55 @@ class EnhancedExpenseTrackerScreen extends ConsumerStatefulWidget {
 class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTrackerScreen> {
   final _amountController = TextEditingController();
   final _descriptionController = TextEditingController();
-  String _selectedCategory = 'Food';
+  String _selectedCategory = 'Food & Drinks';
   String _selectedType = 'Expense';
   DateTime _selectedDate = DateTime.now();
   TimeOfDay _selectedTime = TimeOfDay.now();
   String _selectedFilter = 'All';
 
-  // Calendar override filter (takes precedence over _selectedFilter chips when set)
   String? _calendarFilterMode; // 'Date' | 'Month' | 'Year' | 'Week'
   DateTime? _calendarAnchorDate;
 
-  final List<String> _expenseCategories = [
-    'Food',
-    'Transport',
-    'Entertainment',
-    'Shopping',
-    'Bills',
-    'Healthcare',
-    'Education',
-    'Travel',
-    'Salary',
-    'Freelance',
-    'Investment',
-    'Other',
-  ];
+  // Category groups with emoji/3D-like icons
+  final Map<String, List<Map<String, String>>> _categoryGroups = {
+    '💳 Daily Living': [
+      {'name': 'Groceries / Shopping', 'icon': '🛒'},
+      {'name': 'Food & Drinks', 'icon': '🍔'},
+      {'name': 'Transportation', 'icon': '🚌'},
+      {'name': 'Rent / Housing', 'icon': '🏠'},
+      {'name': 'Utilities', 'icon': '💡'},
+      {'name': 'Internet & Mobile', 'icon': '📶'},
+    ],
+    '🎉 Entertainment & Lifestyle': [
+      {'name': 'Movies / OTT', 'icon': '🎬'},
+      {'name': 'Dining Out / Café', 'icon': '🍽️'},
+      {'name': 'Gaming', 'icon': '🎮'},
+      {'name': 'Sports / Fitness / Gym', 'icon': '🏋️‍♂️'},
+      {'name': 'Travel / Trips', 'icon': '🧳'},
+      {'name': 'Events / Concerts', 'icon': '🎤'},
+    ],
+    '👨‍👩‍👧 Personal & Family': [
+      {'name': 'Education / Courses', 'icon': '🎓'},
+      {'name': 'Medical / Health', 'icon': '🏥'},
+      {'name': 'Insurance', 'icon': '🛡️'},
+      {'name': 'Family & Kids', 'icon': '👨‍👩‍👧'},
+      {'name': 'Gifts & Donations', 'icon': '🎁'},
+    ],
+    '💼 Work & Finance': [
+      {'name': 'Office Supplies', 'icon': '🗂️'},
+      {'name': 'Business Travel', 'icon': '✈️'},
+      {'name': 'Investments / Stocks', 'icon': '📈'},
+      {'name': 'Loans / EMIs', 'icon': '💳'},
+      {'name': 'Savings / Deposits', 'icon': '💰'},
+    ],
+    '🛠️ Others / Misc': [
+      {'name': 'Shopping (Clothes, Electronics)', 'icon': '🛍️'},
+      {'name': 'Repairs & Maintenance', 'icon': '🧰'},
+      {'name': 'Pets', 'icon': '🐾'},
+      {'name': 'Subscriptions', 'icon': '📺'},
+      {'name': 'Miscellaneous / Other', 'icon': '✨'},
+    ],
+  };
 
   final List<String> _types = ['Expense', 'Income'];
   final List<String> _filters = ['All', 'Today', 'This Week', 'This Month', 'This Year'];
@@ -62,13 +87,14 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final isLight = Theme.of(context).brightness == Brightness.light;
+
     final expenses = ref.watch(expenseProvider);
     final expenseNotifier = ref.read(expenseProvider.notifier);
 
-    // Apply calendar override filter if set; otherwise, use chip-based filter
     final filteredExpenses = _applyEffectiveFilter(expenses);
 
-    // Calculate totals for filtered data
     final totalExpenses = filteredExpenses
         .where((e) => e.type == 'Expense')
         .fold(0.0, (sum, e) => sum + e.amount);
@@ -80,19 +106,20 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
     final netAmount = totalIncome - totalExpenses;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
+      backgroundColor: scheme.surface,
       appBar: AppBar(
-        title: const Text('💵 Expense Tracker', style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF1A1A1A),
+        title: Text('💵 Expense Tracker', style: TextStyle(color: scheme.onSurface)),
+        backgroundColor: scheme.surface,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Colors.white),
+        iconTheme: IconThemeData(color: scheme.onSurface),
         actions: [
           IconButton(
             onPressed: () => _showAddExpenseDialog(expenseNotifier),
-            icon: const Icon(Icons.add, color: Colors.white),
+            icon: Icon(Icons.add, color: scheme.primary),
+            tooltip: 'Add transaction',
           ),
           PopupMenuButton<String>(
-            icon: const Icon(Icons.calendar_month, color: Colors.white),
+            icon: Icon(Icons.calendar_month, color: scheme.onSurface),
             tooltip: 'Filter by date/month/year/week',
             onSelected: (value) async {
               switch (value) {
@@ -129,22 +156,18 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
       ),
       body: Column(
         children: [
-          // Motivational Quote
-          _buildMotivationalQuote(),
-          // Filter Section
-          _buildFilterSection(),
-          // Summary Card
-          _buildSummaryCard(totalIncome, totalExpenses, netAmount),
-          // Expense List
+          _buildMotivationalQuote(isLight),
+          _buildFilterSection(scheme),
+          _buildSummaryCard(totalIncome, totalExpenses, netAmount, scheme),
           Expanded(
             child: filteredExpenses.isEmpty
-                ? _buildEmptyState()
+                ? _buildEmptyState(scheme)
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: filteredExpenses.length,
                     itemBuilder: (context, index) {
                       final expense = filteredExpenses[index];
-                      return _buildExpenseCard(expense, expenseNotifier);
+                      return _buildExpenseCard(expense, expenseNotifier, scheme);
                     },
                   ),
           ),
@@ -152,30 +175,30 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddExpenseDialog(expenseNotifier),
-        backgroundColor: const Color(0xFF667EEA),
+        backgroundColor: scheme.primary,
         child: const Icon(Icons.add, color: Colors.white),
       ),
     );
   }
 
-  Widget _buildMotivationalQuote() {
-    final randomQuote = _motivationalQuotes[DateTime.now().millisecond % _motivationalQuotes.length];
-    
+  Widget _buildMotivationalQuote(bool isLight) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
+        gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF667EEA), Color(0xFF764BA2)],
+          colors: isLight
+              ? [const Color(0xFF93C5FD), const Color(0xFFA78BFA)]
+              : [const Color(0xFF667EEA), const Color(0xFF764BA2)],
         ),
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF667EEA).withOpacity(0.3),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -185,7 +208,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              randomQuote,
+              _motivationalQuotes[DateTime.now().millisecond % _motivationalQuotes.length],
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 14,
@@ -198,7 +221,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
     );
   }
 
-  Widget _buildFilterSection() {
+  Widget _buildFilterSection(ColorScheme scheme) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
       child: SingleChildScrollView(
@@ -209,17 +232,17 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
             return Container(
               margin: const EdgeInsets.only(right: 8),
               child: FilterChip(
-                label: Text(filter, style: TextStyle(color: isSelected ? Colors.white : Colors.grey[400])),
+                label: Text(filter, style: TextStyle(color: isSelected ? Colors.white : scheme.onSurface.withOpacity(0.6))),
                 selected: isSelected,
                 onSelected: (selected) {
                   setState(() {
-                    _calendarFilterMode = null; // clear calendar override when using chips
+                    _calendarFilterMode = null;
                     _calendarAnchorDate = null;
                     _selectedFilter = filter;
                   });
                 },
-                backgroundColor: const Color(0xFF2A2A2A),
-                selectedColor: const Color(0xFF667EEA),
+                backgroundColor: scheme.surfaceVariant,
+                selectedColor: scheme.primary,
                 checkmarkColor: Colors.white,
               ),
             );
@@ -229,21 +252,17 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
     );
   }
 
-  Widget _buildSummaryCard(double totalIncome, double totalExpenses, double netAmount) {
+  Widget _buildSummaryCard(double totalIncome, double totalExpenses, double netAmount, ColorScheme scheme) {
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xFF1A1A1A), Color(0xFF2A2A2A)],
-        ),
+        color: scheme.surface,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF3A3A3A)),
+        border: Border.all(color: scheme.outlineVariant),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.3),
+            color: Colors.black.withOpacity(0.05),
             blurRadius: 15,
             offset: const Offset(0, 8),
           ),
@@ -253,8 +272,8 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
         children: [
           Text(
             _getEffectiveFilterTitle(),
-            style: const TextStyle(
-              color: Colors.white,
+            style: TextStyle(
+              color: scheme.onSurface,
               fontSize: 18,
               fontWeight: FontWeight.bold,
             ),
@@ -278,18 +297,18 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
       children: [
         Icon(icon, color: color, size: 24),
         const SizedBox(height: 8),
-                    Text(
-                      '₹${amount.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        color: color,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+        Text(
+          '₹${amount.toStringAsFixed(2)}',
+          style: TextStyle(
+            color: color,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         Text(
           label,
           style: const TextStyle(
-            color: Colors.white70,
+            color: Colors.black54,
             fontSize: 12,
           ),
         ),
@@ -297,7 +316,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(ColorScheme scheme) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -306,31 +325,31 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
             width: 120,
             height: 120,
             decoration: BoxDecoration(
-              color: const Color(0xFF667EEA).withOpacity(0.1),
+              color: scheme.primary.withOpacity(0.1),
               shape: BoxShape.circle,
             ),
-            child: const Icon(
+            child: Icon(
               Icons.receipt_long,
               size: 60,
-              color: Color(0xFF667EEA),
+              color: scheme.primary,
             ),
           ),
           const SizedBox(height: 24),
-          const Text(
+          Text(
             'No expenses found',
             style: TextStyle(
               fontSize: 24,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: scheme.onSurface,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Start tracking your ${_getEffectiveFilterTitle().toLowerCase()}',
             textAlign: TextAlign.center,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 16,
-              color: Colors.grey,
+              color: scheme.onSurfaceVariant,
             ),
           ),
           const SizedBox(height: 24),
@@ -339,7 +358,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
             icon: const Icon(Icons.add),
             label: const Text('Add First Expense'),
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF667EEA),
+              backgroundColor: scheme.primary,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               shape: RoundedRectangleBorder(
@@ -352,10 +371,10 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
     );
   }
 
-  Widget _buildExpenseCard(ExpenseEntry expense, ExpenseStateManager notifier) {
+  Widget _buildExpenseCard(ExpenseEntry expense, ExpenseStateManager notifier, ColorScheme scheme) {
     final isIncome = expense.type == 'Income';
     final color = isIncome ? Colors.green : Colors.red;
-    final icon = isIncome ? Icons.trending_up : Icons.trending_down;
+    final icon = _iconForCategory(expense.category);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -367,12 +386,12 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
+              color: scheme.surface,
               borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF3A3A3A)),
+              border: Border.all(color: scheme.outlineVariant),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withOpacity(0.06),
                   blurRadius: 10,
                   offset: const Offset(0, 5),
                 ),
@@ -384,10 +403,10 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
                   width: 48,
                   height: 48,
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.2),
+                    color: (isIncome ? Colors.green : scheme.primary).withOpacity(0.15),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, color: color, size: 24),
+                  child: Center(child: Text(icon, style: const TextStyle(fontSize: 24))),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -396,25 +415,25 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
                     children: [
                       Text(
                         expense.category,
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: scheme.onSurface,
                         ),
                       ),
                       if (expense.description != null)
                         Text(
                           expense.description!,
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey,
+                            color: scheme.onSurfaceVariant,
                           ),
                         ),
                       Text(
                         DateFormat('MMM dd, yyyy • HH:mm').format(expense.date),
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey,
+                          color: scheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -437,7 +456,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
                         IconButton(
                           onPressed: () => _showEditExpenseDialog(expense, notifier),
                           icon: const Icon(Icons.edit, size: 16),
-                          color: Colors.grey,
+                          color: scheme.onSurfaceVariant,
                         ),
                         IconButton(
                           onPressed: () => _showDeleteConfirmation(expense, notifier),
@@ -459,7 +478,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
   void _showAddExpenseDialog(ExpenseStateManager notifier) {
     _amountController.clear();
     _descriptionController.clear();
-    _selectedCategory = 'Food';
+    _selectedCategory = 'Food & Drinks';
     _selectedType = 'Expense';
     _selectedDate = DateTime.now();
     _selectedTime = TimeOfDay.now();
@@ -486,15 +505,16 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
 
   Widget _buildExpenseDialog(ExpenseStateManager notifier, ExpenseEntry? expense) {
     final isEditing = expense != null;
+    final scheme = Theme.of(context).colorScheme;
 
     return StatefulBuilder(
       builder: (context, setDialogState) {
         return AlertDialog(
-          backgroundColor: const Color(0xFF1A1A1A),
+          backgroundColor: scheme.surface,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           title: Text(
             isEditing ? 'Edit Transaction' : 'Add Transaction',
-            style: const TextStyle(color: Colors.white),
+            style: TextStyle(color: scheme.onSurface),
           ),
           content: SingleChildScrollView(
             child: Column(
@@ -503,7 +523,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
                 // Type Selection
                 Container(
                   decoration: BoxDecoration(
-                    color: const Color(0xFF2A2A2A),
+                    color: scheme.surfaceVariant,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
@@ -519,14 +539,14 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             decoration: BoxDecoration(
-                              color: isSelected ? const Color(0xFF667EEA) : Colors.transparent,
+                              color: isSelected ? scheme.primary : Colors.transparent,
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Text(
                               type,
                               textAlign: TextAlign.center,
                               style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.grey[400],
+                                color: isSelected ? Colors.white : scheme.onSurfaceVariant,
                                 fontWeight: FontWeight.w600,
                               ),
                             ),
@@ -541,79 +561,48 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
                 TextField(
                   controller: _amountController,
                   keyboardType: TextInputType.number,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: scheme.onSurface),
                   decoration: InputDecoration(
                     labelText: 'Amount',
-                    labelStyle: const TextStyle(color: Colors.grey),
+                    labelStyle: TextStyle(color: scheme.onSurfaceVariant),
                     prefixText: '₹ ',
-                    prefixStyle: const TextStyle(color: Colors.white),
+                    prefixStyle: TextStyle(color: scheme.onSurface),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF3A3A3A)),
+                      borderSide: BorderSide(color: scheme.outlineVariant),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF3A3A3A)),
+                      borderSide: BorderSide(color: scheme.outlineVariant),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF667EEA)),
+                      borderSide: BorderSide(color: scheme.primary),
                     ),
                   ),
                 ),
                 const SizedBox(height: 16),
-                // Category
-                DropdownButtonFormField<String>(
-                  value: _selectedCategory,
-                  dropdownColor: const Color(0xFF2A2A2A),
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'Category',
-                    labelStyle: const TextStyle(color: Colors.grey),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF3A3A3A)),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF3A3A3A)),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF667EEA)),
-                    ),
-                  ),
-                  items: _expenseCategories.map((category) {
-                    return DropdownMenuItem(
-                      value: category,
-                      child: Text(category, style: const TextStyle(color: Colors.white)),
-                    );
-                  }).toList(),
-                  onChanged: (value) {
-                    setDialogState(() {
-                      _selectedCategory = value!;
-                    });
-                  },
-                ),
+                // Category Picker with icons and groups
+                _buildCategoryPicker(setDialogState, scheme),
                 const SizedBox(height: 16),
                 // Description
                 TextField(
                   controller: _descriptionController,
-                  style: const TextStyle(color: Colors.white),
+                  style: TextStyle(color: scheme.onSurface),
                   decoration: InputDecoration(
                     labelText: 'Description (Optional)',
-                    labelStyle: const TextStyle(color: Colors.grey),
+                    labelStyle: TextStyle(color: scheme.onSurfaceVariant),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF3A3A3A)),
+                      borderSide: BorderSide(color: scheme.outlineVariant),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF3A3A3A)),
+                      borderSide: BorderSide(color: scheme.outlineVariant),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF667EEA)),
+                      borderSide: BorderSide(color: scheme.primary),
                     ),
                   ),
                 ),
@@ -623,31 +612,18 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
                   children: [
                     Expanded(
                       child: ListTile(
-                        title: const Text('Date', style: TextStyle(color: Colors.white)),
+                        title: Text('Date', style: TextStyle(color: scheme.onSurface)),
                         subtitle: Text(
                           DateFormat('MMM dd, yyyy').format(_selectedDate),
-                          style: const TextStyle(color: Colors.grey),
+                          style: TextStyle(color: scheme.onSurfaceVariant),
                         ),
-                        trailing: const Icon(Icons.calendar_today, color: Colors.grey),
+                        trailing: Icon(Icons.calendar_today, color: scheme.onSurfaceVariant),
                         onTap: () async {
                           final date = await showDatePicker(
                             context: context,
                             initialDate: _selectedDate,
                             firstDate: DateTime(2020),
-                            lastDate: DateTime.now(),
-                            builder: (context, child) {
-                              return Theme(
-                                data: Theme.of(context).copyWith(
-                                  colorScheme: const ColorScheme.dark(
-                                    primary: Color(0xFF667EEA),
-                                    onPrimary: Colors.white,
-                                    surface: Color(0xFF2A2A2A),
-                                    onSurface: Colors.white,
-                                  ),
-                                ),
-                                child: child!,
-                              );
-                            },
+                            lastDate: DateTime.now().add(const Duration(days: 3650)),
                           );
                           if (date != null) {
                             setDialogState(() {
@@ -659,29 +635,16 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
                     ),
                     Expanded(
                       child: ListTile(
-                        title: const Text('Time', style: TextStyle(color: Colors.white)),
+                        title: Text('Time', style: TextStyle(color: scheme.onSurface)),
                         subtitle: Text(
                           _selectedTime.format(context),
-                          style: const TextStyle(color: Colors.grey),
+                          style: TextStyle(color: scheme.onSurfaceVariant),
                         ),
-                        trailing: const Icon(Icons.access_time, color: Colors.grey),
+                        trailing: Icon(Icons.access_time, color: scheme.onSurfaceVariant),
                         onTap: () async {
                           final time = await showTimePicker(
                             context: context,
                             initialTime: _selectedTime,
-                            builder: (context, child) {
-                              return Theme(
-                                data: Theme.of(context).copyWith(
-                                  colorScheme: const ColorScheme.dark(
-                                    primary: Color(0xFF667EEA),
-                                    onPrimary: Colors.white,
-                                    surface: Color(0xFF2A2A2A),
-                                    onSurface: Colors.white,
-                                  ),
-                                ),
-                                child: child!,
-                              );
-                            },
                           );
                           if (time != null) {
                             setDialogState(() {
@@ -699,7 +662,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+              child: Text('Cancel', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             ),
             ElevatedButton(
               onPressed: () {
@@ -739,7 +702,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
                 }
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF667EEA),
+                backgroundColor: Theme.of(context).colorScheme.primary,
                 foregroundColor: Colors.white,
               ),
               child: Text(isEditing ? 'Update' : 'Add'),
@@ -750,28 +713,148 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
     );
   }
 
+  Widget _buildCategoryPicker(void Function(void Function()) setDialogState, ColorScheme scheme) {
+    final allItems = _categoryGroups.entries
+        .expand((group) => group.value.map((item) => {'group': group.key, ...item}))
+        .toList();
+
+    return GestureDetector(
+      onTap: () async {
+        final selected = await showModalBottomSheet<Map<String, String>>(
+          context: context,
+          isScrollControlled: true,
+          backgroundColor: scheme.surface,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+          ),
+          builder: (context) {
+            String query = '';
+            return StatefulBuilder(
+              builder: (context, setState) {
+                final filtered = allItems.where((item) {
+                  final name = (item['name'] ?? '').toLowerCase();
+                  return query.isEmpty || name.contains(query);
+                }).toList();
+                return SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.category, size: 20),
+                            const SizedBox(width: 8),
+                            const Expanded(
+                              child: Text('Choose Category', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+                            ),
+                            IconButton(
+                              onPressed: () => Navigator.of(context).pop(),
+                              icon: const Icon(Icons.close),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        TextField(
+                          onChanged: (val) => setState(() { query = val.trim().toLowerCase(); }),
+                          decoration: InputDecoration(
+                            hintText: 'Search categories',
+                            prefixIcon: const Icon(Icons.search),
+                            filled: true,
+                            fillColor: scheme.surfaceVariant,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Expanded(
+                          child: ListView.separated(
+                            itemCount: filtered.length,
+                            separatorBuilder: (_, __) => const Divider(height: 1),
+                            itemBuilder: (context, index) {
+                              final item = filtered[index];
+                              final name = item['name']!;
+                              final icon = item['icon']!;
+                              return ListTile(
+                                leading: Text(icon, style: const TextStyle(fontSize: 24)),
+                                title: Text(name),
+                                subtitle: Text(item['group']!),
+                                onTap: () => Navigator.of(context).pop({'name': name, 'icon': icon}),
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
+        if (selected != null) {
+          setDialogState(() {
+            _selectedCategory = selected['name']!;
+          });
+        }
+      },
+      child: InputDecorator(
+        decoration: InputDecoration(
+          labelText: 'Category',
+          labelStyle: TextStyle(color: scheme.onSurfaceVariant),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: scheme.outlineVariant),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: scheme.outlineVariant),
+          ),
+        ),
+        child: Row(
+          children: [
+            Text(_iconForCategory(_selectedCategory), style: const TextStyle(fontSize: 22)),
+            const SizedBox(width: 8),
+            Expanded(child: Text(_selectedCategory)),
+            const Icon(Icons.arrow_drop_down),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _iconForCategory(String category) {
+    for (final group in _categoryGroups.values) {
+      for (final item in group) {
+        if (item['name'] == category) return item['icon'] ?? '💬';
+      }
+    }
+    return '💬';
+  }
+
   void _showDeleteConfirmation(ExpenseEntry expense, ExpenseStateManager notifier) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF1A1A1A),
+        backgroundColor: Theme.of(context).colorScheme.surface,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Delete Transaction', style: TextStyle(color: Colors.white)),
+        title: const Text('Delete Transaction'),
         content: const Text(
           'Are you sure you want to delete this transaction?',
-          style: TextStyle(color: Colors.grey),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: const Text('Cancel'),
           ),
           ElevatedButton(
             onPressed: () {
               notifier.remove(expense.id);
               Navigator.of(context).pop();
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
             child: const Text('Delete'),
           ),
         ],
@@ -870,19 +953,6 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
       initialDate: initial,
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 3650)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF667EEA),
-              onPrimary: Colors.white,
-              surface: Color(0xFF2A2A2A),
-              onSurface: Colors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (picked != null) {
       setState(() {
@@ -900,19 +970,6 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 3650)),
       initialDatePickerMode: DatePickerMode.year,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF667EEA),
-              onPrimary: Colors.white,
-              surface: Color(0xFF2A2A2A),
-              onSurface: Colors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (picked != null) {
       setState(() {
@@ -930,19 +987,6 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 3650)),
       initialDatePickerMode: DatePickerMode.year,
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF667EEA),
-              onPrimary: Colors.white,
-              surface: Color(0xFF2A2A2A),
-              onSurface: Colors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (picked != null) {
       setState(() {
@@ -959,19 +1003,6 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
       initialDate: initial,
       firstDate: DateTime(2020),
       lastDate: DateTime.now().add(const Duration(days: 3650)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: Color(0xFF667EEA),
-              onPrimary: Colors.white,
-              surface: Color(0xFF2A2A2A),
-              onSurface: Colors.white,
-            ),
-          ),
-          child: child!,
-        );
-      },
     );
     if (picked != null) {
       setState(() {
@@ -987,7 +1018,6 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
   }
 
   DateTime _startOfWeek(DateTime date) {
-    // Assuming week starts on Monday (1)
     final int weekday = date.weekday; // 1..7 (Mon..Sun)
     return DateTime(date.year, date.month, date.day).subtract(Duration(days: weekday - 1));
   }

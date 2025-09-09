@@ -19,8 +19,8 @@ class TimerNotifier extends StateNotifier<TimerState> {
   void start() {
     if (state.running) return;
     state = state.copyWith(running: true);
-    _ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
-      state = state.copyWith(elapsed: state.elapsed + const Duration(seconds: 1));
+    _ticker ??= Timer.periodic(const Duration(milliseconds: 100), (_) {
+      state = state.copyWith(elapsed: state.elapsed + const Duration(milliseconds: 100));
     });
   }
 

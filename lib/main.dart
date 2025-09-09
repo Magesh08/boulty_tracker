@@ -17,7 +17,7 @@ class MyApp extends StatelessWidget {
     final lightScheme = ColorScheme.fromSeed(
       seedColor: DesignSystem.primaryColor,
       brightness: Brightness.light,
-      surface: const Color(0xFFFEF7FF),
+      surface: Colors.white,
     );
     final darkScheme = ColorScheme.fromSeed(
       seedColor: DesignSystem.primaryColor,
@@ -28,13 +28,13 @@ class MyApp extends StatelessWidget {
     final lightTheme = ThemeData(
       useMaterial3: true,
       colorScheme: lightScheme,
-      scaffoldBackgroundColor: lightScheme.surface,
+      scaffoldBackgroundColor: Colors.white,
       textTheme: DesignSystem.textTheme.apply(
         bodyColor: lightScheme.onSurface,
         displayColor: lightScheme.onSurface,
       ),
       appBarTheme: AppBarTheme(
-        backgroundColor: lightScheme.surface,
+        backgroundColor: Colors.white,
         foregroundColor: lightScheme.onSurface,
         centerTitle: true,
         elevation: 0,
@@ -45,9 +45,14 @@ class MyApp extends StatelessWidget {
           color: lightScheme.onSurface,
         ),
       ),
-      cardTheme: const CardThemeData(
-        margin: EdgeInsets.symmetric(vertical: 8),
+      cardTheme: CardThemeData(
+        margin: const EdgeInsets.symmetric(vertical: 8),
+        color: Colors.white,
+        surfaceTintColor: Colors.transparent,
+        elevation: 2,
+        shadowColor: Colors.black.withOpacity(0.06),
       ),
+      dividerColor: Colors.black12,
       progressIndicatorTheme: ProgressIndicatorThemeData(
         color: lightScheme.primary,
       ),
@@ -101,7 +106,7 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         title: 'Daily Tracker',
         debugShowCheckedModeBanner: false,
-        themeMode: ThemeMode.dark,
+        themeMode: ThemeMode.light,
         theme: lightTheme,
         darkTheme: darkTheme,
         home: const AppShell(),

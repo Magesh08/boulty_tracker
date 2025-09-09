@@ -18,6 +18,7 @@ class RunState {
   final Duration elapsed;
   final double distanceMeters;
   final List<RunSample> path;
+  final DateTime? startedAt;
 
   const RunState({
     required this.running,
@@ -25,6 +26,7 @@ class RunState {
     required this.elapsed,
     required this.distanceMeters,
     required this.path,
+    this.startedAt,
   });
 
   RunState copyWith({
@@ -33,6 +35,7 @@ class RunState {
     Duration? elapsed,
     double? distanceMeters,
     List<RunSample>? path,
+    DateTime? startedAt,
   }) =>
       RunState(
         running: running ?? this.running,
@@ -40,6 +43,7 @@ class RunState {
         elapsed: elapsed ?? this.elapsed,
         distanceMeters: distanceMeters ?? this.distanceMeters,
         path: path ?? this.path,
+        startedAt: startedAt ?? this.startedAt,
       );
 
   static const initial = RunState(
@@ -48,6 +52,7 @@ class RunState {
     elapsed: Duration.zero,
     distanceMeters: 0.0,
     path: <RunSample>[],
+    startedAt: null,
   );
 }
 
@@ -71,7 +76,7 @@ class RunNotifier extends StateNotifier<RunState> {
     if (state.running) return;
     final ok = await ensurePermission();
     if (!ok) return;
-    state = state.copyWith(running: true, paused: false);
+    state = state.copyWith(running: true, paused: false, startedAt: DateTime.now());
 
     _ticker ??= Timer.periodic(const Duration(seconds: 1), (_) {
       if (state.running && !state.paused) {

@@ -17,6 +17,7 @@ class _ExpenseTrackerScreenState extends ConsumerState<ExpenseTrackerScreen> {
   String _selectedCategory = 'Food';
   String _selectedType = 'Expense';
   DateTime _selectedDate = DateTime.now();
+  TimeOfDay _selectedTime = TimeOfDay.now();
 
   // Calendar filter state
   String _filterMode = 'All'; // All | Date | Month | Year
@@ -65,7 +66,7 @@ class _ExpenseTrackerScreenState extends ConsumerState<ExpenseTrackerScreen> {
     final netAmount = totalIncome - totalExpenses;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: const Color.fromARGB(255, 255, 255, 255),
       appBar: AppBar(
         title: const Text('💵 Expense Tracker'),
         backgroundColor: Colors.transparent,
@@ -450,6 +451,7 @@ class _ExpenseTrackerScreenState extends ConsumerState<ExpenseTrackerScreen> {
     _selectedCategory = 'Food';
     _selectedType = 'Expense';
     _selectedDate = DateTime.now();
+    _selectedTime = TimeOfDay.now();
 
     showDialog(
       context: context,
@@ -463,6 +465,7 @@ class _ExpenseTrackerScreenState extends ConsumerState<ExpenseTrackerScreen> {
     _selectedCategory = expense.category;
     _selectedType = expense.type;
     _selectedDate = expense.date;
+    _selectedTime = TimeOfDay.fromDateTime(expense.date);
 
     showDialog(
       context: context,
@@ -538,24 +541,48 @@ class _ExpenseTrackerScreenState extends ConsumerState<ExpenseTrackerScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            // Date
-            ListTile(
-              title: const Text('Date'),
-              subtitle: Text(DateFormat('MMM dd, yyyy').format(_selectedDate)),
-              trailing: const Icon(Icons.calendar_today),
-              onTap: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: _selectedDate,
-                  firstDate: DateTime(2020),
-                  lastDate: DateTime.now(),
-                );
-                if (date != null) {
-                  setState(() {
-                    _selectedDate = date;
-                  });
-                }
-              },
+            // Date & Time
+            Row(
+              children: [
+                Expanded(
+                  child: ListTile(
+                    title: const Text('Date'),
+                    subtitle: Text(DateFormat('MMM dd, yyyy').format(_selectedDate)),
+                    trailing: const Icon(Icons.calendar_today),
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: _selectedDate,
+                        firstDate: DateTime(2020),
+                        lastDate: DateTime.now().add(const Duration(days: 3650)),
+                      );
+                      if (date != null) {
+                        setState(() {
+                          _selectedDate = date;
+                        });
+                      }
+                    },
+                  ),
+                ),
+                Expanded(
+                  child: ListTile(
+                    title: const Text('Time'),
+                    subtitle: Text(_selectedTime.format(context)),
+                    trailing: const Icon(Icons.access_time),
+                    onTap: () async {
+                      final time = await showTimePicker(
+                        context: context,
+                        initialTime: _selectedTime,
+                      );
+                      if (time != null) {
+                        setState(() {
+                          _selectedTime = time;
+                        });
+                      }
+                    },
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -569,9 +596,17 @@ class _ExpenseTrackerScreenState extends ConsumerState<ExpenseTrackerScreen> {
           onPressed: () {
             final amount = double.tryParse(_amountController.text);
             if (amount != null && amount > 0) {
+              final dateTime = DateTime(
+                _selectedDate.year,
+                _selectedDate.month,
+                _selectedDate.day,
+                _selectedTime.hour,
+                _selectedTime.minute,
+              );
+
               final newExpense = ExpenseEntry(
                 id: isEditing ? expense.id : DateTime.now().millisecondsSinceEpoch.toString(),
-                date: _selectedDate,
+                date: dateTime,
                 amount: amount,
                 category: _selectedCategory,
                 type: _selectedType,

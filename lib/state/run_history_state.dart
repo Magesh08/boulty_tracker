@@ -4,22 +4,38 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class RunEntry {
-  final DateTime date;
+  final DateTime date; // legacy primary date (usually end time)
   final Duration duration;
   final double distanceMeters;
+  final DateTime? startAt;
+  final DateTime? endAt;
+  final List<int>? splitsSeconds; // per-km split durations in seconds
 
-  const RunEntry({required this.date, required this.duration, required this.distanceMeters});
+  const RunEntry({
+    required this.date,
+    required this.duration,
+    required this.distanceMeters,
+    this.startAt,
+    this.endAt,
+    this.splitsSeconds,
+  });
 
   Map<String, dynamic> toJson() => {
         'date': date.toIso8601String(),
         'duration': duration.inSeconds,
         'distanceMeters': distanceMeters,
+        'startAt': startAt?.toIso8601String(),
+        'endAt': endAt?.toIso8601String(),
+        'splitsSeconds': splitsSeconds,
       };
 
   static RunEntry fromJson(Map<String, dynamic> json) => RunEntry(
         date: DateTime.parse(json['date'] as String),
         duration: Duration(seconds: (json['duration'] as num).toInt()),
         distanceMeters: (json['distanceMeters'] as num).toDouble(),
+        startAt: (json['startAt'] as String?) != null ? DateTime.parse(json['startAt'] as String) : null,
+        endAt: (json['endAt'] as String?) != null ? DateTime.parse(json['endAt'] as String) : null,
+        splitsSeconds: (json['splitsSeconds'] as List?)?.map((e) => (e as num).toInt()).toList(),
       );
 }
 
