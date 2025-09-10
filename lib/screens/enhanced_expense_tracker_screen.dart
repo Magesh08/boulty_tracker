@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../models/tracking_models.dart';
 import '../state/comprehensive_tracking_state.dart';
+import '../theme/design_system.dart';
 
 class EnhancedExpenseTrackerScreen extends ConsumerStatefulWidget {
   const EnhancedExpenseTrackerScreen({super.key});
@@ -25,6 +26,17 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
 
   // Category groups with emoji/3D-like icons
   final Map<String, List<Map<String, String>>> _categoryGroups = {
+     '💼 Work & Finance': [
+  {'name': 'Salary', 'icon': '💵'},
+  {'name': 'Business', 'icon': '🏢'},
+  {'name': 'Office Supplies', 'icon': '🗂️'},
+  {'name': 'Business Travel', 'icon': '✈️'},
+  {'name': 'Investments / Stocks', 'icon': '📈'},
+  {'name': 'Loans / EMIs', 'icon': '💳'},
+  {'name': 'Savings / Deposits', 'icon': '💰'},
+
+],
+
     '💳 Daily Living': [
       {'name': 'Groceries / Shopping', 'icon': '🛒'},
       {'name': 'Food & Drinks', 'icon': '🍔'},
@@ -48,13 +60,6 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
       {'name': 'Family & Kids', 'icon': '👨‍👩‍👧'},
       {'name': 'Gifts & Donations', 'icon': '🎁'},
     ],
-    '💼 Work & Finance': [
-      {'name': 'Office Supplies', 'icon': '🗂️'},
-      {'name': 'Business Travel', 'icon': '✈️'},
-      {'name': 'Investments / Stocks', 'icon': '📈'},
-      {'name': 'Loans / EMIs', 'icon': '💳'},
-      {'name': 'Savings / Deposits', 'icon': '💰'},
-    ],
     '🛠️ Others / Misc': [
       {'name': 'Shopping (Clothes, Electronics)', 'icon': '🛍️'},
       {'name': 'Repairs & Maintenance', 'icon': '🧰'},
@@ -67,16 +72,16 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
   final List<String> _types = ['Expense', 'Income'];
   final List<String> _filters = ['All', 'Today', 'This Week', 'This Month', 'This Year'];
 
-  final List<String> _motivationalQuotes = [
-    "💰 Every dollar saved is a dollar earned!",
-    "🎯 Small consistent actions lead to big financial wins!",
-    "💪 You're building wealth one transaction at a time!",
-    "🌟 Financial freedom starts with tracking every penny!",
-    "🚀 Your future self will thank you for today's discipline!",
-    "💎 Smart money management is the key to success!",
-    "🔥 Every expense tracked is a step toward your goals!",
-    "⭐ You're not just spending money, you're investing in your future!",
-  ];
+  // final List<String> _motivationalQuotes = [
+  //   "💰 Every Rupee saved is a  earned!",
+  //   "🎯 Small consistent actions lead to big financial wins!",
+  //   "💪 You're building wealth one transaction at a time!",
+  //   "🌟 Financial freedom starts with trackiFng every penny!",
+  //   "🚀 Your future self will thank you for today's discipline!",
+  //   "💎 Smart money management is the key to success!",
+  //   "🔥 Every expense tracked is a step toward your goals!",
+  //   "⭐ You're not just spending money, you're investing in your future!",
+  // ];
 
   @override
   void dispose() {
@@ -156,7 +161,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
       ),
       body: Column(
         children: [
-          _buildMotivationalQuote(isLight),
+          // _buildMotivationalQuote(isLight),
           _buildFilterSection(scheme),
           _buildSummaryCard(totalIncome, totalExpenses, netAmount, scheme),
           Expanded(
@@ -181,45 +186,45 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
     );
   }
 
-  Widget _buildMotivationalQuote(bool isLight) {
-    return Container(
-      margin: const EdgeInsets.all(16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isLight
-              ? [const Color(0xFF93C5FD), const Color(0xFFA78BFA)]
-              : [const Color(0xFF667EEA), const Color(0xFF764BA2)],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.lightbulb, color: Colors.white, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              _motivationalQuotes[DateTime.now().millisecond % _motivationalQuotes.length],
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildMotivationalQuote(bool isLight) {
+  //   return Container(
+  //     margin: const EdgeInsets.all(16),
+  //     padding: const EdgeInsets.all(16),
+  //     decoration: BoxDecoration(
+  //       gradient: LinearGradient(
+  //         begin: Alignment.topLeft,
+  //         end: Alignment.bottomRight,
+  //         colors: isLight
+  //             ? [const Color(0xFF93C5FD), const Color(0xFFA78BFA)]
+  //             : [const Color(0xFF667EEA), const Color(0xFF764BA2)],
+  //       ),
+  //       borderRadius: BorderRadius.circular(16),
+  //       boxShadow: [
+  //         BoxShadow(
+  //           color: Colors.black.withOpacity(0.1),
+  //           blurRadius: 12,
+  //           offset: const Offset(0, 6),
+  //         ),
+  //       ],
+  //     ),
+  //     child: Row(
+  //       children: [
+  //         const Icon(Icons.lightbulb, color: Colors.white, size: 24),
+  //         const SizedBox(width: 12),
+  //         Expanded(
+  //           child: Text(
+  //             _motivationalQuotes[DateTime.now().millisecond % _motivationalQuotes.length],
+  //             style: const TextStyle(
+  //               color: Colors.white,
+  //               fontSize: 14,
+  //               fontWeight: FontWeight.w500,
+  //             ),
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   Widget _buildFilterSection(ColorScheme scheme) {
     return Container(
@@ -257,7 +262,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: scheme.surface,
+        color: DesignSystem.primaryColor.withOpacity(0.1),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: scheme.outlineVariant),
         boxShadow: [
@@ -456,7 +461,7 @@ class _EnhancedExpenseTrackerScreenState extends ConsumerState<EnhancedExpenseTr
                         IconButton(
                           onPressed: () => _showEditExpenseDialog(expense, notifier),
                           icon: const Icon(Icons.edit, size: 16),
-                          color: scheme.onSurfaceVariant,
+                          color: DesignSystem.primaryColor,
                         ),
                         IconButton(
                           onPressed: () => _showDeleteConfirmation(expense, notifier),

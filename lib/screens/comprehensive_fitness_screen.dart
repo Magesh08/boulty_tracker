@@ -31,17 +31,18 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0F0F0F),
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: const Text('💪 Fitness & Wellness', style: TextStyle(color: Colors.white)),
-        backgroundColor: const Color(0xFF1A1A1A),
-        elevation: 0,
+        backgroundColor: const Color(0xFF667EEA),
+        elevation: 2,
+        shadowColor: const Color(0xFF667EEA).withOpacity(0.3),
         iconTheme: const IconThemeData(color: Colors.white),
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xFF667EEA),
+          indicatorColor: Colors.white,
           labelColor: Colors.white,
-          unselectedLabelColor: Colors.grey,
+          unselectedLabelColor: Colors.white70,
           tabs: const [
             Tab(text: 'Schedule', icon: Icon(Icons.calendar_today)),
             Tab(text: 'Activities', icon: Icon(Icons.fitness_center)),
@@ -81,7 +82,7 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
               style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.white,
+                color: Color(0xFF1E293B),
               ),
             ),
             const SizedBox(height: 16),
@@ -97,11 +98,18 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
 
   Widget _buildDateSelector() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF3A3A3A)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF667EEA).withOpacity(0.1),
+            blurRadius: 20,
+            offset: const Offset(0, 4),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -111,12 +119,12 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
             children: [
               const Text(
                 'Selected Date',
-                style: TextStyle(color: Colors.grey, fontSize: 12),
+                style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
               ),
               Text(
                 DateFormat('EEEE, MMM dd, yyyy').format(_selectedDate),
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: Color(0xFF1E293B),
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -146,12 +154,19 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
         .toList();
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF3A3A3A)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF667EEA).withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -161,14 +176,14 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
             style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Color(0xFF1E293B),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 16),
           if (dayActivities.isEmpty)
             const Text(
               'Rest Day',
-              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+              style: TextStyle(color: Color(0xFF64748B), fontStyle: FontStyle.italic),
             )
           else
             ...dayActivities.map((activity) => _buildScheduleActivity(activity)).toList(),
@@ -179,14 +194,21 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
 
   Widget _buildScheduleActivity(DynamicActivity activity) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Color(int.parse(activity.color.replaceFirst('#', '0xFF'))).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        color: Color(int.parse(activity.color.replaceFirst('#', '0xFF'))).withOpacity(0.05),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: Color(int.parse(activity.color.replaceFirst('#', '0xFF'))).withOpacity(0.3),
+          color: Color(int.parse(activity.color.replaceFirst('#', '0xFF'))).withOpacity(0.2),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Color(int.parse(activity.color.replaceFirst('#', '0xFF'))).withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -199,14 +221,14 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
                 Text(
                   activity.name,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: Color(0xFF1E293B),
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 Text(
                   activity.description,
                   style: const TextStyle(
-                    color: Colors.grey,
+                    color: Color(0xFF64748B),
                     fontSize: 12,
                   ),
                 ),
@@ -227,21 +249,21 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.calendar_today, size: 80, color: Colors.grey),
+          const Icon(Icons.calendar_today, size: 80, color: Color(0xFF94A3B8)),
           const SizedBox(height: 16),
           const Text(
             'No Schedule Found',
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Color(0xFF1E293B),
             ),
           ),
           const SizedBox(height: 8),
           const Text(
             'Create a weekly schedule to organize your fitness routine',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: Color(0xFF64748B)),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -275,7 +297,7 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Color(0xFF1E293B),
                 ),
               ),
               IconButton(
@@ -303,30 +325,44 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
 
   Widget _buildActivityCard(DynamicActivity activity, int totalMinutes) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 16),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _startActivity(activity),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF3A3A3A)),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF667EEA).withOpacity(0.08),
+                  blurRadius: 15,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: Row(
               children: [
                 Container(
-                  width: 50,
-                  height: 50,
+                  width: 60,
+                  height: 60,
                   decoration: BoxDecoration(
-                    color: Color(int.parse(activity.color.replaceFirst('#', '0xFF'))).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
+                    color: Color(int.parse(activity.color.replaceFirst('#', '0xFF'))).withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Color(int.parse(activity.color.replaceFirst('#', '0xFF'))).withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Center(
-                    child: Text(activity.icon, style: const TextStyle(fontSize: 24)),
+                    child: Text(activity.icon, style: const TextStyle(fontSize: 28)),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -339,28 +375,39 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w600,
-                          color: Colors.white,
+                          color: Color(0xFF1E293B),
                         ),
                       ),
+                      const SizedBox(height: 4),
                       Text(
                         activity.description,
                         style: const TextStyle(
                           fontSize: 14,
-                          color: Colors.grey,
+                          color: Color(0xFF64748B),
                         ),
                       ),
-                      if (totalMinutes > 0)
-                        Text(
-                          'Today: ${totalMinutes} minutes',
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF667EEA),
+                      if (totalMinutes > 0) ...[
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF667EEA).withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(
+                            'Today: ${totalMinutes} minutes',
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: Color(0xFF667EEA),
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
+                      ],
                     ],
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios, color: Colors.grey, size: 16),
+                const Icon(Icons.arrow_forward_ios, color: Color(0xFF94A3B8), size: 16),
               ],
             ),
           ),
@@ -380,7 +427,7 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Color(0xFF1E293B),
             ),
           ),
           const SizedBox(height: 16),
@@ -392,18 +439,25 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
 
   Widget _buildYogaPoseCard(YogaPose pose) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 20),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: () => _showYogaPoseDetails(pose),
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(20),
           child: Container(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: const Color(0xFF1A1A1A),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFF3A3A3A)),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF667EEA).withOpacity(0.08),
+                  blurRadius: 15,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -421,14 +475,14 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
                             style: const TextStyle(
                               fontSize: 18,
                               fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              color: Color(0xFF1E293B),
                             ),
                           ),
                           Text(
                             pose.sanskritName,
                             style: const TextStyle(
                               fontSize: 14,
-                              color: Colors.grey,
+                              color: Color(0xFF64748B),
                               fontStyle: FontStyle.italic,
                             ),
                           ),
@@ -459,25 +513,25 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
                 Text(
                   pose.description,
                   style: const TextStyle(
-                    color: Colors.grey,
+                    color: Color(0xFF64748B),
                     fontSize: 14,
                   ),
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Icon(Icons.timer, color: Colors.grey, size: 16),
+                    Icon(Icons.timer, color: Color(0xFF94A3B8), size: 16),
                     const SizedBox(width: 4),
                     Text(
                       '${pose.durationMinutes} min',
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
                     ),
                     const SizedBox(width: 16),
-                    Icon(Icons.category, color: Colors.grey, size: 16),
+                    Icon(Icons.category, color: Color(0xFF94A3B8), size: 16),
                     const SizedBox(width: 4),
                     Text(
                       pose.category,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 12),
                     ),
                   ],
                 ),
@@ -531,7 +585,7 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
                 style: TextStyle(
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
-                  color: Colors.white,
+                  color: Color(0xFF1E293B),
                 ),
               ),
               IconButton(
@@ -555,21 +609,21 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(Icons.music_note, size: 80, color: Colors.grey),
+          const Icon(Icons.music_note, size: 80, color: Color(0xFF94A3B8)),
           const SizedBox(height: 16),
           const Text(
             'No Music Sessions Today',
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: Colors.white,
+              color: Color(0xFF1E293B),
             ),
           ),
           const SizedBox(height: 8),
           const Text(
             'Start tracking your music listening for better mood and relaxation',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: Color(0xFF64748B)),
           ),
           const SizedBox(height: 24),
           ElevatedButton.icon(
@@ -588,23 +642,37 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
 
   Widget _buildMusicSessionCard(MusicSession session) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1A1A),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFF3A3A3A)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF667EEA).withOpacity(0.08),
+            blurRadius: 15,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(color: const Color(0xFFE2E8F0)),
       ),
       child: Row(
         children: [
           Container(
-            width: 50,
-            height: 50,
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
-              color: const Color(0xFFEC4899).withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12),
+              color: const Color(0xFFEC4899).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFFEC4899).withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
-            child: const Icon(Icons.music_note, color: Color(0xFFEC4899), size: 24),
+            child: const Icon(Icons.music_note, color: Color(0xFFEC4899), size: 28),
           ),
           const SizedBox(width: 16),
           Expanded(
@@ -616,22 +684,25 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w600,
-                    color: Colors.white,
+                    color: Color(0xFF1E293B),
                   ),
                 ),
-                if (session.artist != null)
+                if (session.artist != null) ...[
+                  const SizedBox(height: 4),
                   Text(
                     session.artist!,
                     style: const TextStyle(
                       fontSize: 14,
-                      color: Colors.grey,
+                      color: Color(0xFF64748B),
                     ),
                   ),
+                ],
+                const SizedBox(height: 8),
                 Text(
                   '${session.minutesListened} minutes • ${DateFormat('HH:mm').format(session.date)}',
                   style: const TextStyle(
                     fontSize: 12,
-                    color: Colors.grey,
+                    color: Color(0xFF64748B),
                   ),
                 ),
               ],
@@ -674,11 +745,11 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
       builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
+            colorScheme: const ColorScheme.light(
               primary: Color(0xFF667EEA),
               onPrimary: Colors.white,
-              surface: Color(0xFF2A2A2A),
-              onSurface: Colors.white,
+              surface: Colors.white,
+              onSurface: Color(0xFF1E293B),
             ),
           ),
           child: child!,
@@ -730,7 +801,7 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
       builder: (context) => Container(
         height: MediaQuery.of(context).size.height * 0.8,
         decoration: const BoxDecoration(
-          color: Color(0xFF1A1A1A),
+          color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
         ),
         child: Column(
@@ -740,7 +811,7 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
               height: 4,
               margin: const EdgeInsets.symmetric(vertical: 12),
               decoration: BoxDecoration(
-                color: Colors.grey[300],
+                color: const Color(0xFFE2E8F0),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -755,14 +826,14 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
                     style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Color(0xFF1E293B),
                     ),
                   ),
                   Text(
                     pose.sanskritName,
                     style: const TextStyle(
                       fontSize: 16,
-                      color: Colors.grey,
+                      color: Color(0xFF64748B),
                       fontStyle: FontStyle.italic,
                     ),
                   ),
@@ -771,7 +842,7 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
                     pose.description,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      color: Colors.grey,
+                      color: Color(0xFF64748B),
                       fontSize: 16,
                     ),
                   ),
@@ -781,7 +852,7 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Color(0xFF1E293B),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -811,7 +882,7 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      color: Colors.white,
+                      color: Color(0xFF1E293B),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -819,7 +890,7 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
                     pose.instructions,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
-                      color: Colors.grey,
+                      color: Color(0xFF64748B),
                       fontSize: 14,
                     ),
                   ),
@@ -865,3 +936,4 @@ class _ComprehensiveFitnessScreenState extends ConsumerState<ComprehensiveFitnes
     );
   }
 }
+
